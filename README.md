@@ -33,20 +33,6 @@ $ ./ilrt.rb -f inst001.txt -p
 
 After processing is completed a report will be written to the __{BASENAME}.report.txt__ file, in this case __inst001.report.txt__.
 
-#### Other command-line options
-
-```
-Usage: ilrt [options]
-    -f, --file PATH          IBM BPM Instrumentation Log File (txt format)
-    -t, --top COUNT          Number of Expensive Activities to print, default = 10
-    -p, --prof               Print Expensive Activities detailed profile
-    -l, --level N            Expensive Activities detailed profile maximum depth level
-    -s, --self               Print top self periods
-    -d, --dump               Dump each Expensive Activity raw log to separate file
-    -r, --rescan             Do not use cached index and forcibly rescan instrumentation log file
-    -h, --help               Print help
-```
-
 #### More Info
 
 More details about how to use this tool here - http://afedotov.github.io/ILRT
