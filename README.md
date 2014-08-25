@@ -2,7 +2,7 @@
 
 ILRT (Instrumentation Log Report Tool) is a utility I created to help detect and diagnose performance bottlenecks of __IBM WebSphere Lombardi Edition__ / __IBM BPM__, primarily in the Lombardi (BPMN processes) runtime. Lombardi process runtime has embedded instrumentation capabilities, and can record detailed system profile of every process or service activity. It is somehow described [here](http://www-01.ibm.com/support/docview.wss?uid=swg21613989). Оutput of NonXMLDump utility provided by IBM is a human-readable but in fact is a big and raw instrumentation log which is very difficult to read and analyze by hand. ILRT parse such raw text instrumentation log and then produce report with statistical information and detailed aggregate profile of expensive activities in a much more readable form.
 
-Example of such report output can be viewed [here](example-reports/inst001.report.txt).
+Example of such report output can be viewed [here](example-reports/inst001.report.txt?raw=true).
 
 >It is very first prototype created to address some common problems, so it was written quick using __Ruby__ language. It is very helpful, works well, but not as fast as we would like. Maybe someday I'll rewrite it on something more performant, Scala for example.
 
