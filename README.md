@@ -21,7 +21,7 @@ First you should create plain text instrumentation log from binary log with [IBM
 $ NonXMLDump inst001.dat -dumpIfOver 10000000 -truncateIfOver 10000000 > inst001.txt
 ```
 
-Java/JRuby version. You must set value for maximum heap with __-Xmx__ option proportionally to instrumentation log size:
+Java version. You must set value for maximum heap with __-Xmx__ option proportionally to instrumentation log size:
 ```
 $ java -Xmx2048m -jar ilrt.jar -f inst001.txt -p
 ```
