@@ -8,8 +8,8 @@ Example of such report output can be viewed [here](example-reports/inst001.repor
 
 #### Download
 
-* [ilrt.rb](ilrt.rb) - If you on the Mac OS X, or your system has Ruby interpreter installed.
-* [ilrt.jar](ilrt.jar) - It is compiled version based on JRuby, and is only required to have Java JRE to run.
+* [ilrt.rb](ilrt.rb?raw=true) - If you on the Mac OS X, or your system has Ruby interpreter installed.
+* [ilrt.jar](ilrt.jar?raw=true) - It is compiled version based on JRuby, and is only required to have Java JRE to run.
 
 For Windows systems you can download and install Ruby from here - http://rubyinstaller.org/
 
