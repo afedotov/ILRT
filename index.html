@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="http:////maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  <style>
+    body {
+      overflow-x: hidden;
+      max-width: 960px;
+      padding: 10px 10px 10px 30px;
+      margin: 2em auto;
+    }
+    h3,h4 {
+      color: #000033;
+      font-weight: bold;
+    }
+  </style>
+  <title>ILRT - Instrumentation Log Report Tool for IBM BPM</title>
+</head>
+
+<body>
+
+<h3>ILRT - Instrumentation Log Report Tool for IBM BPM</h3>
+<hr>
+<a class="btn btn-default" href="https://github.com/afedotov/ILRT/archive/master.zip" title="Download ILRT as a zip file">
+  Download ZIP
+</a>
+<a class="btn btn-default" href="https://github.com/afedotov/ILRT/archive/master.tar.gz" title="Download ILRT as a tar.gz file">
+  Download TGZ
+</a>
+<a class="btn btn-default" href="https://github.com/afedotov/ILRT" title="View ILRT on GitHub">
+  View on GitHub
+</a>
+<span style="float: right;">Project maintained by <a href="https://github.com/afedotov">afedotov</a></span>
+<hr>
+
+<h4>ILRT - What Is It?</h4>
+
+<p>ILRT (Instrumentation Log Report Tool) is a utility I created to help detect and diagnose performance bottlenecks of <strong>IBM WebSphere Lombardi Edition</strong> / <strong>IBM BPM</strong>, primarily in the Lombardi (BPMN processes) runtime. Lombardi process runtime has embedded instrumentation capabilities, and can record detailed system profile of every process or service activity. It is somehow described <a href="http://www-01.ibm.com/support/docview.wss?uid=swg21613989">here</a>. Оutput of NonXMLDump utility provided by IBM is a human-readable but in fact is a big and raw instrumentation log which is very difficult to read and analyze by hand. ILRT parse such raw text instrumentation log and then produce report with statistical information and detailed aggregate profile of expensive activities in a much more readable form.</p>
+
+<p>Example of such report output can be viewed <a href="https://github.com/afedotov/ILRT/raw/master/example-reports/inst001.report.txt">here</a>.</p>
+
+<blockquote class="small">
+<p>It is very first prototype created to address some common problems, so it was written quick using <strong>Ruby</strong> language. It is very helpful, works well, but not as fast as we would like. Maybe someday I'll rewrite it on something more performant, Scala for example.</p>
+</blockquote>
+
+<br>
+<h4>Download</h4>
+<ul>
+<li><a href="https://github.com/afedotov/ILRT/raw/master/ilrt.rb">ilrt.rb</a> - If you on the Mac OS X, or your system has Ruby interpreter installed.</li>
+<li><a href="https://github.com/afedotov/ILRT/raw/master/ilrt.jar">ilrt.jar</a> - It is compiled version based on JRuby, and is only required to have Java JRE to run.</li>
+</ul>
+
+<p>For Windows systems you can download and install Ruby from here - <a href="http://rubyinstaller.org/">http://rubyinstaller.org/</a></p>
+<br>
+<h4>How to Run</h4>
+
+<p>First you should create plain text instrumentation log from binary log with <a href="http://www-01.ibm.com/support/docview.wss?uid=swg21613989">IBM provided utility</a>. Note that default values for <b>dumpIfOver</b> and <b>truncateIfOver</b> are 10000 and 20000, so if your activities has more than 10k periods, such activities will be splitted and truncated. For logs with big and expensive activities I use much more bigger values here, so nothing will be truncated.</p>
+
+<pre>
+  <code>$ NonXMLDump inst001.dat -dumpIfOver 10000000 -truncateIfOver 10000000 &gt; inst001.txt</code>
+</pre>
+
+<p>Java version. You must set value for maximum heap with <strong>-Xmx</strong> option proportionally to instrumentation log size:</p>
+
+<pre>
+  <code>$ java -Xmx2048m -jar ilrt.jar -f inst001.txt -p</code>
+</pre>
+
+<p>Ruby version:</p>
+
+<pre>
+  <code>$ ./ilrt.rb -f inst001.txt -p</code>
+</pre>
+
+<p>After processing is completed a report will be written to the <strong>{BASENAME}.report.txt</strong> file, in this case <strong>inst001.report.txt</strong>.</p>
+
+<br>
+<h4>Other command-line options</h4>
+<pre><code>Usage: ilrt [options]
+    -f, --file PATH          IBM BPM Instrumentation Log File (txt format)
+    -t, --top COUNT          Number of Expensive Activities to print, default = 10
+    -p, --prof               Print Expensive Activities detailed profile
+    -l, --level N            Expensive Activities detailed profile maximum depth level
+    -s, --self               Print top self periods
+    -d, --dump               Dump each Expensive Activity raw log to separate file
+    -r, --rescan             Do not use cached index and forcibly rescan instrumentation log file
+    -h, --help               Print help
+</code></pre>
+
+<br>
+<h4>More Info</h4>
+<p>To be continued...</p>
+
+</body>
+</html>
