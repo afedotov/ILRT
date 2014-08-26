@@ -15,6 +15,13 @@
       color: #000033;
       font-weight: bold;
     }
+    code {
+      color: #000033;
+      background: #EEEEEE;
+    }
+    pre {
+      margin: 10px;
+    }
   </style>
   <title>ILRT - Instrumentation Log Report Tool for IBM BPM</title>
 </head>
@@ -24,10 +31,10 @@
 <h3>ILRT - Instrumentation Log Report Tool for IBM BPM</h3>
 <hr>
 <a class="btn btn-default" href="https://github.com/afedotov/ILRT/archive/master.zip" title="Download ILRT as a zip file">
-  Download ZIP
+  Download .ZIP
 </a>
 <a class="btn btn-default" href="https://github.com/afedotov/ILRT/archive/master.tar.gz" title="Download ILRT as a tar.gz file">
-  Download TGZ
+  Download .TAR.GZ
 </a>
 <a class="btn btn-default" href="https://github.com/afedotov/ILRT" title="View ILRT on GitHub">
   View on GitHub
@@ -56,7 +63,7 @@
 <br>
 <h4>How to Run</h4>
 
-<p>First you should create plain text instrumentation log from binary log with <a href="http://www-01.ibm.com/support/docview.wss?uid=swg21613989">IBM provided utility</a>. Note that default values for <b>dumpIfOver</b> and <b>truncateIfOver</b> are 10000 and 20000, so if your activities has more than 10k periods, such activities will be splitted and truncated. For logs with big and expensive activities I use much more bigger values here, so nothing will be truncated.</p>
+<p>First you should create plain text instrumentation log from binary log with <a href="http://www-01.ibm.com/support/docview.wss?uid=swg21613989">IBM provided utility</a>. Note that default values for <code>dumpIfOver</code> and <code>truncateIfOver</code> are 10000 and 20000, so if your activities has more than 10k periods, such activities will be splitted and truncated. For logs with big and expensive activities I use much more bigger values here, so nothing will be truncated.</p>
 
 <pre>
   <code>$ NonXMLDump inst001.dat -dumpIfOver 10000000 -truncateIfOver 10000000 &gt; inst001.txt</code>
@@ -77,7 +84,7 @@
 <p>After processing is completed a report will be written to the <strong>{BASENAME}.report.txt</strong> file, in this case <strong>inst001.report.txt</strong>.</p>
 
 <br>
-<h4>Other command-line options</h4>
+<h4>Command-line options</h4>
 <pre><code>Usage: ilrt [options]
     -f, --file PATH          IBM BPM Instrumentation Log File (txt format)
     -t, --top COUNT          Number of Expensive Activities to print, default = 10
@@ -89,8 +96,21 @@
     -h, --help               Print help
 </code></pre>
 
+<ul>
+  <li>
+    Option <code>-l</code> is useful when you have very branchy profile tree and whant to limit depth to specific level, for example <code>-l 3</code> will produce such output:
+    <pre class="small"><code class="small">9750 ms - Resume Workflow Engine [cnt=1,med=9750ms,max=9750ms]
+|    5570 ms - Do Job, Worker=com.lombardisoftware.component.twscript.worker.ScriptWorker [cnt=15,med=213ms,max=1678ms]
+|    |    2763 ms - Eval Script [cnt=15,med=1ms,max=1451ms]
+|    |    2598 ms - EJB Calls, Method=PersistenceServicesCore.findByPrimaryKey [cnt=572,med=3ms,max=105ms]
+|    |    209 ms - #self# [cnt=132,med=1ms,max=74ms]</code></pre>
+  </li>
+  <li>Option <code>-s</code> is useful to detect long <b>#self#</b> periods, that could potentially be due to GC pauses rather than valuable work.</li>
+  <li>Option <code>-d</code> will extract portions of raw instrumentation log to separate files named <b>{FILENAME}.{THREAD}.{LINE}.thread.txt</b>, for each of top expensive activities. It is useful when you want manually review raw log of each expensive activity, and don't want to deal with large 3GB instrumentation log.</li>
+</ul>
+
 <br>
-<h4>More Info</h4>
+<h4>How to read report</h4>
 <p>To be continued...</p>
 
 </body>
