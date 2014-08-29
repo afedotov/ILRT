@@ -50,7 +50,7 @@
 
 <h4>ILRT - What Is It?</h4>
 
-<p>ILRT (Instrumentation Log Report Tool) is a utility I created to help detect and diagnose performance bottlenecks of <strong>IBM WebSphere Lombardi Edition</strong> / <strong>IBM BPM</strong>, primarily in the Lombardi (BPMN processes) runtime. Lombardi process runtime has embedded instrumentation capabilities, and can record detailed system profile of every process or service activity. It is somehow described <a href="http://www-01.ibm.com/support/docview.wss?uid=swg21613989">here</a>. Оutput of NonXMLDump utility provided by IBM is a human-readable but in fact is a big and raw instrumentation log which is very difficult to read and analyze by hand. ILRT parse such raw text instrumentation log and then produce report with statistical information and detailed aggregate profile of expensive activities in a much more readable form.</p>
+<p>ILRT (Instrumentation Log Report Tool) is a utility I created to help detect and diagnose performance bottlenecks of <strong>IBM WebSphere Lombardi Edition</strong> / <strong>IBM BPM</strong>, primarily in the Lombardi (BPMN processes) runtime. Lombardi process runtime has embedded instrumentation capabilities, and can record detailed system profile of every process or service activity. It is somehow described <a href="http://www-01.ibm.com/support/docview.wss?uid=swg21613989">here</a>. Оutput of NonXMLDump utility provided by IBM is a human-readable but in fact is a big and raw instrumentation log which is very difficult to read and analyze by hand. ILRT parse such raw text instrumentation log and then produce report with statistical information and detailed aggregate profile of top expensive activities in a much more readable form.</p>
 
 <p>Example of such report output can be viewed <a href="https://github.com/afedotov/ILRT/raw/master/example-reports/inst001.report.txt">here</a>.</p>
 
@@ -62,10 +62,10 @@
 <h4>Download</h4>
 <ul>
 <li><a href="https://github.com/afedotov/ILRT/raw/master/ilrt.rb" download>ilrt.rb</a> - If you on the Mac OS X, or your system has Ruby interpreter installed.</li>
-<li><a href="https://github.com/afedotov/ILRT/raw/master/ilrt.jar" download>ilrt.jar</a> - It is compiled version based on JRuby, and is only required to have Java JRE to run.</li>
+<li><a href="https://github.com/afedotov/ILRT/raw/master/ilrt.jar" download>ilrt.jar</a> - It is binary compiled version based on JRuby, and is only required to have Java JRE to run.</li>
 </ul>
 
-<p>For Windows systems you can download and install Ruby from here - <a href="http://rubyinstaller.org/">http://rubyinstaller.org/</a></p>
+<p>For Windows systems you can download and install Ruby interpreter from here - <a href="http://rubyinstaller.org/">http://rubyinstaller.org/</a></p>
 <br>
 <h4>How to Run</h4>
 
@@ -87,7 +87,7 @@
   <code>$ ./ilrt.rb -f inst001.txt -p</code>
 </pre>
 
-<p>After processing is completed a report will be written to the <strong>{BASENAME}.report.txt</strong> file, in this case <strong>inst001.report.txt</strong>.</p>
+<p>After processing is completed report will be written to the <strong>{BASENAME}.report.txt</strong> file, in this case <strong>inst001.report.txt</strong>.</p>
 
 <br>
 <h4>Command-line options</h4>
@@ -112,7 +112,7 @@
 |    |    209 ms - #self# [cnt=132,med=1ms,max=74ms]</code></pre>
   </li>
   <li>Option <code>-s</code> is useful to detect long <b>#self#</b> periods, that could potentially be due to GC pauses rather than valuable work.</li>
-  <li>Option <code>-d</code> will extract portions of raw instrumentation log to separate files named <b>{FILENAME}.{THREAD}.{LINE}.thread.txt</b>, for each of top expensive activities. It is useful when you want manually review raw log of each expensive activity, and don't want to deal with large 3GB instrumentation log.</li>
+  <li>Option <code>-d</code> will extract portions of raw instrumentation log to separate files named <b>{FILENAME}.{THREAD}.{LINE}.thread.txt</b>, for each of top expensive activities. It is useful when you want manually review raw log of each expensive activity, and don't want to deal with large xGB instrumentation log.</li>
 </ul>
 
 <br>
@@ -154,8 +154,8 @@
   <li><b>Resume Workflow Engine</b>. This is main loop of <b>WorkflowManager</b> - stateful bean that perform human/system/etc services navigation. Navigation means executing single unit of work from current state to nearest checkpoint as defined by service steps flow, for example it could be full system service flow from Start to End, or from Coach to Coach for human service. Inside this loop WorkflowManager executes multiple service steps using specific Service Step Workers.</li>
   <li><b>Do Job (Service Step Workers)</b>. These are individual workers for each main service step types such as Server Script (ScriptWorker), Decision Gateway (SwitchWorker), Heritage Coach and Coach (CoachWorker, CoachNGWorker), Java Integration (JavaConnectorWorker), Web Service Integration (WSConnectorWorker), Advanced Integration Service (SCAConnectorWorker) and so on. Note that SubProcessWorker is invoked twice for each Nested Service call, in fact it performs execution context switching.</li>
   <li><b>PersistenceServices</b>. It is a common ORM API used by Lombardi process engine for storing different PO (Persistent Objects) in Relational Database. Each engine call to PersistenceServices results in a direct database access. For example, findByPrimaryKey loads single PO instance by its key from DB. Note that recorded period includes full time needed to query DB, construct PO instance, and perform all post-load operations, and strongly depends on PO type. For some PO types like BPDInstanceData it's only single DB query, for other like TWProcess post-load operation parses loaded XML definitions, and then queries several child PO's via corresponding DAO. So this report looks like average temperature of patients in hospital, but it helps to assess the overall performance.</li>
-  <li><b>Task: Load/Save Execution Context</b>. This is time spent for load and save Execution Context of Task instance. Execution Context is the state of Task instance and its runtime variables, it is stored as serialized and compressed Java object in BLOB column. Time period is recorded inside of the specific helper, and includes every complex operations needed to load or save context: DB query, BLOB compression/decompression, serialization/deserialization, query to symbol table and shared object instances.</li>
-  <li><b>BPD: Load/Save Execution Context</b>. This is time spent for load and save Execution Context of BPD instance. In this period included only time to query BLOB from DB.</li>
+  <li><b>Task: Load/Save Execution Context</b>. This is time spent for load and save Execution Context of Task instance. Execution Context is the state of Task instance and its runtime variables, it is stored as serialized and compressed Java object in BLOB column. Time period is recorded inside of the specific helper, and includes every complex operations needed to load or save context: DB query, BLOB compression/decompression, serialization/deserialization, DB query to symbol table and shared object instances.</li>
+  <li><b>BPD: Load/Save Execution Context</b>. This is time spent for load and save Execution Context of BPD instance. In fact this period includes only time needed to query BLOB from DB.</li>
 </ul>
 
 
@@ -168,7 +168,7 @@
 <p>For improving performance, PersistenceServices usually not directly accessed from process engine. Instead for each PO type exists its own Factory, and within each PO Factory there are FIFO cache for POs. Size of this cache is set by config parameters <b>default-versioned-po-cache-size</b> and <b>default-unversioned-po-cache-size</b>.
 Note that in cluster topologies for cached 'mutable' objects is reqiured to ensure cache coherence. Unfortunately its not so simple, and in IBM BPM this is not implemented. So for cluster topologies you need to disable Unversioned PO cache using config parameter <b>unversioned-po-caching-enable</b>.</p>
 
-<p>Upon effective PO cache strongly depends overall process engine performance. To control cache efficiency ILRT report provides relevant section:</p>
+<p>Overall process engine performance strongly depends upon effective PO cache. To control cache efficiency ILRT report provides relevant section:</p>
 
 <pre class="report">==> Cache Statistics: Summary by persistent object type
 
@@ -232,7 +232,7 @@ Note that in cluster topologies for cached 'mutable' objects is reqiured to ensu
 
 
 <p>Further in report are presented detailed profiles for each expensive activity. Profiles are presented in two forms.<br>
-First is summary table with individual period breakdown for each depth level:
+First is summary table with period breakdown separately for each depth level:
 </p>
 
 <pre class="report">-----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -351,11 +351,11 @@ Looking at this profile what we can say?
 ...truncated...
 </pre>
 
-<p>All periods in the tree are grouped and sorted by its summary time. In square brackets presented statistical info [<b>cnt</b> = number of recorded periods, <b>med</b> = median time of period, <b>max</b> = maximum time of period]. And <b>#self#</b> periods are used to show time spent in parent transactions itself.</p>
+<p>All periods in the tree are grouped and sorted by its summary time. In square brackets presented statistical info [<b>cnt</b> = number of recorded periods, <b>med</b> = median time, <b>max</b> = maximum time]. And <b>#self#</b> periods are used to show time spent in parent transactions itself.</p>
 
 <p>Analyzing it, we can make the following conclusions:
 <ul>
-  <li>Script executions are took 6473 ms in sum, but JavaScript evaluation itself tooks only 1462 ms. Remaining most of time are calls to nested 'Resume Workflow Engine', this could happen if there are JS API tw.system.executeServiceByName function invocations. And direct system DB access using findByPrimaryKey.</li>
+  <li>Script executions are took 6473 ms in sum, but JavaScript evaluation itself tooks only 1462 ms. Remaining most of time are calls to nested 'Resume Workflow Engine', this could happen if there are JS API tw.system.executeServiceByName function invocations. And also remaining time are system DB queries using findByPrimaryKey.</li>
   <li>Context switching with SubProcessWorker tooks 4433 ms in sum, and most of time is DB access using findByPrimaryKey. In detailed findByPrimaryKey layout can be seen that these are accesses to Unversioned POs, which are not cached in cluster topologies.</li>
 </ul>
 </p>
