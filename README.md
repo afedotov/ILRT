@@ -1,6 +1,6 @@
 #### ILRT - What Is It?
 
-ILRT (Instrumentation Log Report Tool) is a utility I created to help detect and diagnose performance bottlenecks of __IBM WebSphere Lombardi Edition__ / __IBM BPM__, primarily in the Lombardi (BPMN processes) runtime. Lombardi process runtime has embedded instrumentation capabilities, and can record detailed system profile of every process or service activity. It is somehow described [here](http://www-01.ibm.com/support/docview.wss?uid=swg21613989). Оutput of NonXMLDump utility provided by IBM is a human-readable but in fact is a big and raw instrumentation log which is very difficult to read and analyze by hand. ILRT parse such raw text instrumentation log and then produce report with statistical information and detailed aggregate profile of expensive activities in a much more readable form.
+ILRT (Instrumentation Log Report Tool) is a utility I created to help detect and diagnose performance bottlenecks of __IBM WebSphere Lombardi Edition__ / __IBM BPM__, primarily in the Lombardi (BPMN processes) runtime. Lombardi process runtime has embedded instrumentation capabilities, and can record detailed system profile of every process or service activity. It is somehow described [here](http://www-01.ibm.com/support/docview.wss?uid=swg21613989). Оutput of NonXMLDump utility provided by IBM is a human-readable but in fact is a big and raw instrumentation log which is very difficult to read and analyze by hand. ILRT parse such raw text instrumentation log and then produce report with statistical information and detailed aggregate profile of top expensive activities in a much more readable form.
 
 Example of such report output can be viewed [here](example-reports/inst001.report.txt?raw=true).
 
@@ -9,9 +9,9 @@ Example of such report output can be viewed [here](example-reports/inst001.repor
 #### Download
 
 * [ilrt.rb](ilrt.rb?raw=true) - If you on the Mac OS X, or your system has Ruby interpreter installed.
-* [ilrt.jar](ilrt.jar?raw=true) - It is compiled version based on JRuby, and is only required to have Java JRE to run.
+* [ilrt.jar](ilrt.jar?raw=true) - It is binary compiled version based on JRuby, and is only required to have Java JRE to run.
 
-For Windows systems you can download and install Ruby from here - http://rubyinstaller.org/
+For Windows systems you can download and install Ruby interpreter from here - http://rubyinstaller.org/
 
 #### How to Run
 
@@ -31,7 +31,7 @@ Ruby version:
 $ ./ilrt.rb -f inst001.txt -p
 ```
 
-After processing is completed a report will be written to the __{BASENAME}.report.txt__ file, in this case __inst001.report.txt__.
+After processing is completed report will be written to the __{BASENAME}.report.txt__ file, in this case __inst001.report.txt__.
 
 #### More Info
 
