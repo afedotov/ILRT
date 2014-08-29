@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" href="http:////maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
   <style>
     body {
       overflow-x: hidden;
@@ -21,6 +21,12 @@
     }
     pre {
       margin: 10px;
+    }
+    pre.report {
+      font-size: 9px;
+    }
+    pre b {
+      color: red;
     }
   </style>
   <title>ILRT - Instrumentation Log Report Tool for IBM BPM</title>
@@ -49,7 +55,7 @@
 <p>Example of such report output can be viewed <a href="https://github.com/afedotov/ILRT/raw/master/example-reports/inst001.report.txt">here</a>.</p>
 
 <blockquote class="small">
-<p>It is very first prototype created to address some common problems, so it was written quick using <strong>Ruby</strong> language. It is very helpful, works well, but not as fast as we would like. Maybe someday I'll rewrite it on something more performant, Scala for example.</p>
+<p>It is very first version created to address some common problems, so it was written quick using <strong>Ruby</strong> language. It is very helpful, works well, but not as fast as we would like. Maybe someday I'll rewrite it on something more performant, Scala for example.</p>
 </blockquote>
 
 <br>
@@ -111,7 +117,252 @@
 
 <br>
 <h4>How to read report</h4>
-<p>To be continued...</p>
+<blockquote class="small">There is no guarantee that by looking at the ILRT report or raw instrumentation log you'll understand what's going on. This information is intended for professional consultants and performance engineers that deeply knows internal architecture of Lombardi process engine. It is not publicly documented by IBM. Here I will try to shed light on some traits of internal Lombardi architecture and how to read ILRT report.</blockquote>
+
+<p>First report section displays overall aggregate statistics about key system transactions occured during instrumentation session. TPS stands for Transactions-Per-Second, it will help to measure workload degree.</p>
+
+<pre class="report">==> System transactions summary: Key performance points
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+| Transaction name                                 | Count        | Average (ms) | Median (ms)  | Max (ms)     | Total (ms)   | TPS          |
+----------------------------------------------------------------------------------------------------------------------------------------------
+| Task: Resume Workflow Engine                     | 2224         | 817          | 24           | 45873        | 1816709      | 5.735        |
+| Task: Load Execution Context                     | 108          | 297          | 302          | 784          | 32036        | 0.278        |
+| Task: Save Execution Context                     | 1671         | 26           | 2            | 903          | 43408        | 4.309        |
+| BPD: Load Execution Context                      | 252          | 10           | 10           | 38           | 2609         | 0.650        |
+| BPD: Save Execution Context                      | 349          | 15           | 14           | 191          | 5195         | 0.900        |
+| PersistenceServices (DB Access)                  | 555585       | 3            | 2            | 439          | 1577196      | 1432.640     |
+|     - findByPrimaryKey                           | 547866       | 3            | 2            | 439          | 1552106      | 1412.736     |
+|     - bulkFindByPrimaryKey                       | 16           | 4            | 4            | 17           | 71           | 0.041        |
+|     - findByFilter                               | 5935         | 3            | 2            | 150          | 16325        | 15.304       |
+|     - save                                       | 1758         | 5            | 2            | 191          | 8587         | 4.533        |
+| Do Job (Service Step Workers)                    | 25492        | 69           | 1            | 32142        | 1747897      | 65.734       |
+|     - ScriptWorker                               | 5947         | 200          | 5            | 32142        | 1189952      | 15.335       |
+|     - SwitchWorker                               | 1398         | 22           | 0            | 359          | 31413        | 3.605        |
+|     - CoachWorker                                | -            | -            | -            | -            | -            | -            |
+|     - CoachNGWorker                              | 87           | 1571         | 545          | 19025        | 136714       | 0.224        |
+|     - SubProcessWorker                           | 9316         | 20           | 1            | 421          | 184005       | 24.022       |
+|     - ExitPointWorker                            | 6850         | 16           | 0            | 408          | 107200       | 17.664       |
+|     - JavaConnectorWorker                        | 1873         | 52           | 7            | 2622         | 98157        | 4.830        |
+|     - WSConnectorWorker                          | -            | -            | -            | -            | -            | -            |
+|     - SCAConnectorWorker                         | -            | -            | -            | -            | -            | -            |
+|     - ILOGDecisionWorker                         | -            | -            | -            | -            | -            | -            |
+| Eval Script                                      | 5937         | 174          | 1            | 32142        | 1031288      | 15.309       |
+----------------------------------------------------------------------------------------------------------------------------------------------</pre>
+
+<ul>
+  <li><b>Resume Workflow Engine</b>. This is main loop of <b>WorkflowManager</b> - stateful bean that perform human/system/etc services navigation. Navigation means executing single unit of work from current state to nearest checkpoint as defined by service steps flow, for example it could be full system service flow from Start to End, or from Coach to Coach for human service. Inside this loop WorkflowManager executes multiple service steps using specific Service Step Workers.</li>
+  <li><b>Do Job (Service Step Workers)</b>. These are individual workers for each main service step types such as Server Script (ScriptWorker), Decision Gateway (SwitchWorker), Heritage Coach and Coach (CoachWorker, CoachNGWorker), Java Integration (JavaConnectorWorker), Web Service Integration (WSConnectorWorker), Advanced Integration Service (SCAConnectorWorker) and so on. Note that SubProcessWorker is invoked twice for each Nested Service call, in fact it performs execution context switching.</li>
+  <li><b>PersistenceServices</b>. It is a common ORM API used by Lombardi process engine for storing different PO (Persistent Objects) in Relational Database. Each engine call to PersistenceServices results in a direct database access. For example, findByPrimaryKey loads single PO instance by its key from DB. Note that recorded period includes full time needed to query DB, construct PO instance, and perform all post-load operations, and strongly depends on PO type. For some PO types like BPDInstanceData it's only single DB query, for other like TWProcess post-load operation parses loaded XML definitions, and then queries several child PO's via corresponding DAO. So this report looks like average temperature of patients in hospital, but it helps to assess the overall performance.</li>
+  <li><b>Task: Load/Save Execution Context</b>. This is time spent for load and save Execution Context of Task instance. Execution Context is the state of Task instance and its runtime variables, it is stored as serialized and compressed Java object in BLOB column. Time period is recorded inside of the specific helper, and includes every complex operations needed to load or save context: DB query, BLOB compression/decompression, serialization/deserialization, query to symbol table and shared object instances.</li>
+  <li><b>BPD: Load/Save Execution Context</b>. This is time spent for load and save Execution Context of BPD instance. In this period included only time to query BLOB from DB.</li>
+</ul>
+
+
+<br>
+<p>Persistent Objects are divided into two different categories:</p>
+<ul>
+  <li><b>Versioned PO</b>. In case of runtime server it is 'immutable' objects associated with certain Versioning Context (i.e. Snapshot). Typically in this category are POs representing definitions of project artefacts like Processes (BPD), Services (TWProcess), Business Objects (TWClass).</li>
+  <li><b>Unversioned PO</b>. In case of runtime server it is 'mutable' objects, usually some runtime data like Process instance and its context (BPDInstance, BPDInstanceData), Task instance (Task), Project, Branch, Snapshot and so on.</li>
+</ul>
+<p>For improving performance, PersistenceServices usually not directly accessed from process engine. Instead for each PO type exists its own Factory, and within each PO Factory there are FIFO cache for POs. Size of this cache is set by config parameters <b>default-versioned-po-cache-size</b> and <b>default-unversioned-po-cache-size</b>.
+Note that in cluster topologies for cached 'mutable' objects is reqiured to ensure cache coherence. Unfortunately its not so simple, and in IBM BPM this is not implemented. So for cluster topologies you need to disable Unversioned PO cache using config parameter <b>unversioned-po-caching-enable</b>.</p>
+
+<p>Upon effective PO cache strongly depends overall process engine performance. To control cache efficiency ILRT report provides relevant section:</p>
+
+<pre class="report">==> Cache Statistics: Summary by persistent object type
+
+---------------------------------------------------------------------------------------------
+| Object type                      | Cache Misses     | Cache Bypasses   | Cache Hits       |
+---------------------------------------------------------------------------------------------
+| TWClass                          | <b>177780</b>           | 0                | 2341010          |
+| Participant                      | 0                | 0                | 243              |
+| BPD                              | 0                | 6                | 111067           |
+| Epv                              | 0                | 0                | 2935             |
+| EnvironmentVariable              | 0                | 0                | 1766             |
+| BpdEvent                         | 0                | 0                | 108              |
+| TWProcess                        | 0                | 1285             | 437424           |
+| ResourceBundleGroup              | 0                | 0                | 2378             |
+| UserAttributeDefinition          | 0                | 0                | 184              |
+| UCA                              | 0                | 0                | 56               |
+| SLA                              | 0                | 0                | 1                |
+| Metric                           | 0                | 0                | 1                |
+---------------------------------------------------------------------------------------------
+| - Total -                        | 177780           | 1291             | 2897173          |
+---------------------------------------------------------------------------------------------
+| Wasting DB, transactions/sec     | <b>461.755</b>                                                |
+---------------------------------------------------------------------------------------------</pre>
+
+<p>In this case we see an inefficient TWClass cache which leads to an excessive load on the database in the amount of 461 TPS.</p>
+
+<br>
+
+<p>Next report section shows top expensive activities occured during instrumentation session.</p>
+
+<pre class="report">==> Top 5 Expensive Activities: Overview for WebContainer
+
+----------------------------------------------------------------------------------------------------------------------------------
+| Duration (ms)    | Thread Name                      | ActivityID   | L1 Periods   | L1 Time (ms) | L2 Periods   | L2 Time (ms) |
+----------------------------------------------------------------------------------------------------------------------------------
+| 26877            | WebContainer : 30                | 18184311     | 1            | 26877        | 101          | 26869        |
+| 24039            | WebContainer : 35                | 15586323     | 29           | 23526        | 314          | 23497        |
+| 23500            | WebContainer : 30                | 21577349     | 6            | 22281        | 71           | 22271        |
+| 22831            | WebContainer : 26                | 14552496     | 8            | 21636        | 271          | 21611        |
+| 20909            | WebContainer : 6                 | 12710752     | 42           | 19795        | 312          | 19742        |
+----------------------------------------------------------------------------------------------------------------------------------
+
+==> Top 5 Expensive Activities: Overview for ThreadPool worker
+
+----------------------------------------------------------------------------------------------------------------------------------
+| Duration (ms)    | Thread Name                      | ActivityID   | L1 Periods   | L1 Time (ms) | L2 Periods   | L2 Time (ms) |
+----------------------------------------------------------------------------------------------------------------------------------
+| 45892            | ThreadPool worker thread #6      | 15312360     | 1            | 45892        | 3            | 45890        |
+| 45812            | ThreadPool worker thread #12     | 16723902     | 1            | 45812        | 3            | 45811        |
+| 43923            | ThreadPool worker thread #0      | 11839121     | 1            | 43923        | 3            | 43922        |
+| 40625            | ThreadPool worker thread #6      | 8351079      | 1            | 40625        | 3            | 40624        |
+| 40324            | ThreadPool worker thread #4      | 10112586     | 1            | 40324        | 3            | 40323        |
+----------------------------------------------------------------------------------------------------------------------------------</pre>
+<p>They divided on two groups for different thread pools:</p>
+<ul>
+<li><b>WebContainer</b>. This thread pool handles HTTP requests from client browsers. So it contain activities which perform service navigation (Human Services, AJAX/REST/Web Services) and Coach display. Also here will be Process Portal and administrative console activities.</li>
+<li><b>ThreadPool worker</b>. This thread pool used by Lombardi engine's Event Manager to execute tasks from EM task queue. These tasks are intended for performing BPD instance navigation (DbNotificationBpdTask), executing UCA and BPD Timers (UcaExecutorTask, TimerNotificationBpdTask), executing automated System Tasks on BPD System Lane (ExecuteSystemLaneActivityTask).</li>
+</ul>
+
+<p>Time periods are recorded in in hierarchical way. Each period can have one or more child periods, as transaction can call multiple other triansactions within itself. So hereinafter <b>L1</b>, <b>L2</b> and so on stands for period depth level. <b>ActivityID</b> is simply a line number in source instrumentation log file, which is intended to identify and find specific activity.</p>
+
+
+<p>Further in report are presented detailed profiles for each expensive activity. Profiles are presented in two forms.<br>
+First is summary table with individual period breakdown for each depth level:
+</p>
+
+<pre class="report">-----------------------------------------------------------------------------------------------------------------------------------------------------------
+| 22831 ms     | ActivityID = 14552496, Thread Name = WebContainer : 26                                                                                   |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+| L1 periods breakdown, total recorded duration = 21636 ms                                                                                                |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+| Total    | Average  | Median   | Max      | Count    | Details                                                                                          |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+<b>| 21627    | 21627    | 21627    | 21627    | 1        | Resume Workflow Engine                                                                           |</b>
+| 5        | 5        | 5        | 5        | 1        | EJB Calls, Method=PersistenceServicesCore.findByFilter                                           |
+| 2        | 2        | 2        | 2        | 1        | EJB Calls, Method=SecurityCore.getUserAttributes                                                 |
+| 2        | 2        | 2        | 2        | 1        | EJB Calls, Method=TaskCore.getCurrentCollaboratingTaskList                                       |
+| 0        | 0        | 0        | 0        | 3        | EJB Calls, Method=CommonServicesCore.getCurrentUserId                                            |
+| 0        | 0        | 0        | 0        | 1        | EJB Calls, Method=UserGroupAPIFacadeCore.findUserByName                                          |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+| L2 periods breakdown, total recorded duration = 21611 ms                                                                                                |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+| Total    | Average  | Median   | Max      | Count    | Details                                                                                          |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+<b>| 10320    | 240      | 217      | 1609     | 43       | Do Job, Worker=com.lombardisoftware.component.twscript.worker.ScriptWorker                       |</b>
+<b>| 4433     | 63       | 13       | 261      | 70       | Do Job, Worker=com.lombardisoftware.component.subprocess.worker.SubProcessWorker                 |</b>
+| 3258     | 93       | 103      | 269      | 35       | Do Job, Worker=com.lombardisoftware.component.exitpoint.worker.ExitPointWorker                   |
+| 1482     | 78       | 77       | 128      | 19       | Save Execution Context                                                                           |
+| 704      | 88       | 6        | 600      | 8        | Transaction                                                                                      |
+| 573      | 27       | 0        | 239      | 21       | Do Job, Worker=com.lombardisoftware.component.twswitch.worker.SwitchWorker                       |
+| 487      | 487      | 487      | 487      | 1        | Do Job, Worker=com.lombardisoftware.component.coachng.worker.CoachNGWorker                       |
+| 162      | 3        | 3        | 9        | 50       | EJB Calls, Method=PersistenceServicesCore.findByPrimaryKey                                       |
+| 162      | 23       | 1        | 70       | 7        | Do Job, Worker=com.lombardisoftware.component.javaconnector.worker.JavaConnectorWorker           |
+| 13       | 4        | 4        | 6        | 3        | Load Task                                                                                        |
+| 10       | 5        | 5        | 6        | 2        | EJB Calls, Method=TaskCore.getCurrentCollaboratingUserList                                       |
+| 5        | 5        | 5        | 5        | 1        | findByFilter, type=ManagedAsset                                                                  |
+| 2        | 2        | 2        | 2        | 1        | EJB Calls, Method=EnvironmentServicesCore.isRepository                                           |
+| 0        | 0        | 0        | 0        | 3        | Method Calls, Call=getIdFromPrincipalName                                                        |
+| 0        | 0        | 0        | 0        | 2        | Lookups, Cache=UserInfoCache                                                                     |
+| 0        | 0        | 0        | 0        | 2        | Lookups, Cache=GroupInfoCache                                                                    |
+| 0        | 0        | 0        | 0        | 1        | Method Calls, Call=getCurrentUsername                                                            |
+| 0        | 0        | 0        | 0        | 1        | EJB Calls, Method=SecurityCore.getUserInformation                                                |
+| 0        | 0        | 0        | 0        | 1        | Lookups, Cache=GroupMembers                                                                      |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+| L3 periods breakdown, total recorded duration = 18786 ms                                                                                                |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+| Total    | Average  | Median   | Max      | Count    | Details                                                                                          |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+<b>| 11189    | 5        | 4        | 141      | 2137     | EJB Calls, Method=PersistenceServicesCore.findByPrimaryKey                                       |</b>
+<b>| 6473     | 151      | 3        | 1494     | 43       | Eval Script                                                                                      |</b>
+| 598      | 598      | 598      | 598      | 1        | Load Execution Context                                                                           |
+| 160      | 23       | 1        | 70       | 7        | Java Execution                                                                                   |
+| 64       | 3        | 3        | 13       | 20       | EJB Calls, Method=PersistenceServicesCore.findByFilter                                           |
+| 62       | 62       | 62       | 62       | 1        | Save Execution Context                                                                           |
+...truncated...
+</pre>
+
+<p>Here we can see which periods took place on the root L1 level of activity, in this case they took 21636 ms in sum. These L1 transactoons calls other transactions inside, they are summarized in L2 periods breakdown and took 21611 ms in sum, and so on.
+<br>
+Looking at this profile what we can say?
+<ul>
+  <li>There was executed service navigation loop (Resume Workflow Engine) and it took 21627 ms.</li>
+  <li>Seems like this service during execution calls multiple Nested Services, there are 70 SubProcessWorkers / 2 = 35 Nested Service calls. Only context switching has taken away a lot - 4433 ms.</li>
+  <li>Most of time activity is spent in JavaScript evaluation and system DB access using PersistenceServices.findByPrimaryKey, the second looks quite strage and should be investigated in details.</li>
+</ul>
+</p>
+
+<p>Second is detailed activity profile formatted as hierarchical tree:</p>
+
+<pre class="report">21627 ms - Resume Workflow Engine [cnt=1,med=21627ms,max=21627ms]
+|    10320 ms - Do Job, Worker=com.lombardisoftware.component.twscript.worker.ScriptWorker [cnt=43,med=217ms,max=1609ms]
+<b>|    |    6473 ms - Eval Script [cnt=43,med=3ms,max=1494ms]
+|    |    |    2671 ms - EJB Calls, Method=PersistenceServicesCore.findByPrimaryKey [cnt=594,med=3ms,max=17ms]
+|    |    |    2231 ms - Resume Workflow Engine [cnt=22,med=102ms,max=154ms]
+|    |    |    1462 ms - #self# [cnt=287,med=1ms,max=565ms]</b>
+|    |    |    79 ms - EJB Calls, Method=PersistenceServicesCore.findByFilter [cnt=21,med=3ms,max=7ms]
+|    |    |    12 ms - Deserialize object [cnt=26,med=0ms,max=2ms]
+|    |    |    10 ms - Serialize object [cnt=26,med=0ms,max=1ms]
+|    |    |    3 ms - EJB Calls, Method=ClientServicesCore.getServerTime [cnt=23,med=0ms,max=1ms]
+|    |    |    2 ms - EJB Calls, Method=SecurityCore.getCurrentUserName [cnt=22,med=0ms,max=1ms]
+|    |    |    2 ms - Method Calls, Call=getIdFromPrincipalName [cnt=44,med=0ms,max=1ms]
+|    |    |    1 ms - Lookups, Cache=UserInfoCache [cnt=44,med=0ms,max=1ms]
+|    |    |    0 ms - Method Calls, Call=getCurrentUsername [cnt=22,med=0ms,max=0ms]
+|    |    3614 ms - EJB Calls, Method=PersistenceServicesCore.findByPrimaryKey [cnt=700,med=4ms,max=90ms]
+|    |    |    1743 ms - findByPrimaryKey, dbId=060e0e85-fb36-42d5-aa4a-ea3bcde680be type=Snapshot [cnt=159,med=10ms,max=90ms]
+|    |    |    1516 ms - findByPrimaryKey, dbId=2276 type=BPDInstance [cnt=446,med=3ms,max=23ms]
+|    |    |    224 ms - findByPrimaryKey, dbId=17098 type=Task [cnt=64,med=3ms,max=13ms]
+|    |    |    101 ms - findByPrimaryKey, dbId=54590053-611e-404e-a0c1-bf285d9b6ccb type=Project [cnt=31,med=3ms,max=8ms]
+|    |    |    30 ms - #self# [cnt=26,med=1ms,max=4ms]
+|    |    231 ms - #self# [cnt=216,med=1ms,max=4ms]
+|    |    2 ms - Get Compiled Script [cnt=43,med=0ms,max=1ms]
+<b>|    4433 ms - Do Job, Worker=com.lombardisoftware.component.subprocess.worker.SubProcessWorker [cnt=70,med=13ms,max=261ms]
+|    |    4068 ms - EJB Calls, Method=PersistenceServicesCore.findByPrimaryKey [cnt=750,med=4ms,max=141ms]
+|    |    |    1997 ms - findByPrimaryKey, dbId=060e0e85-fb36-42d5-aa4a-ea3bcde680be type=Snapshot [cnt=170,med=11ms,max=141ms]
+|    |    |    1685 ms - findByPrimaryKey, dbId=2276 type=BPDInstance [cnt=478,med=3ms,max=16ms]
+|    |    |    231 ms - findByPrimaryKey, dbId=17098 type=Task [cnt=68,med=3ms,max=11ms]
+|    |    |    131 ms - findByPrimaryKey, dbId=54590053-611e-404e-a0c1-bf285d9b6ccb type=Project [cnt=34,med=4ms,max=8ms]
+|    |    |    24 ms - #self# [cnt=24,med=1ms,max=1ms]</b>
+|    |    282 ms - #self# [cnt=247,med=1ms,max=6ms]
+|    |    58 ms - EJB Calls, Method=PersistenceServicesCore.findByFilter [cnt=18,med=3ms,max=13ms]
+|    |    |    57 ms - findByFilter, type=EpvVarValue [cnt=18,med=3ms,max=13ms]
+|    |    |    1 ms - #self# [cnt=1,med=1ms,max=1ms]
+|    |    20 ms - EJB Calls, Method=EnvironmentServicesCore.getVariableValue [cnt=6,med=3ms,max=5ms]
+|    |    |    18 ms - findByFilter, type=EnvironmentVariableValue [cnt=6,med=3ms,max=5ms]
+|    |    |    2 ms - findByPrimaryKey, dbId=1 type=EnvironmentType [cnt=1,med=2ms,max=2ms]
+|    |    3 ms - EJB Calls, Method=EnvironmentServicesCore.lookupVariable [cnt=6,med=0ms,max=2ms]
+|    |    2 ms - EJB Calls, Method=ClientServicesCore.getServerTime [cnt=17,med=0ms,max=1ms]
+|    |    0 ms - EJB Calls, Method=SecurityCore.getUserInformation [cnt=1,med=0ms,max=0ms]
+|    |    |    0 ms - Transaction [cnt=1,med=0ms,max=0ms]
+|    |    0 ms - Lookups, Cache=UserInfoCache [cnt=1,med=0ms,max=0ms]
+|    3258 ms - Do Job, Worker=com.lombardisoftware.component.exitpoint.worker.ExitPointWorker [cnt=35,med=103ms,max=269ms]
+|    |    2961 ms - EJB Calls, Method=PersistenceServicesCore.findByPrimaryKey [cnt=572,med=4ms,max=67ms]
+|    |    |    1369 ms - findByPrimaryKey, dbId=060e0e85-fb36-42d5-aa4a-ea3bcde680be type=Snapshot [cnt=130,med=10ms,max=22ms]
+|    |    |    1235 ms - findByPrimaryKey, dbId=2276 type=BPDInstance [cnt=364,med=3ms,max=14ms]
+|    |    |    187 ms - findByPrimaryKey, dbId=17098 type=Task [cnt=52,med=3ms,max=10ms]
+|    |    |    152 ms - findByPrimaryKey, dbId=54590053-611e-404e-a0c1-bf285d9b6ccb type=Project [cnt=26,med=3ms,max=67ms]
+|    |    |    18 ms - #self# [cnt=18,med=1ms,max=1ms]
+|    |    297 ms - #self# [cnt=173,med=1ms,max=98ms]
+|    1482 ms - Save Execution Context [cnt=19,med=77ms,max=128ms]
+...truncated...
+</pre>
+
+<p>All periods in the tree are grouped and sorted by its summary time. In square brackets presented statistical info [<b>cnt</b> = number of recorded periods, <b>med</b> = median time of period, <b>max</b> = maximum time of period]. And <b>#self#</b> periods are used to show time spent in parent transactions itself.</p>
+
+<p>Analyzing it, we can make the following conclusions:
+<ul>
+  <li>Script executions are took 6473 ms in sum, but JavaScript evaluation itself tooks only 1462 ms. Remaining most of time are calls to nested 'Resume Workflow Engine', this could happen if there are JS API tw.system.executeServiceByName function invocations. And direct system DB access using findByPrimaryKey.</li>
+  <li>Context switching with SubProcessWorker tooks 4433 ms in sum, and most of time is DB access using findByPrimaryKey. In detailed findByPrimaryKey layout can be seen that these are accesses to Unversioned POs, which are not cached in cluster topologies.</li>
+</ul>
+</p>
+
+<br>
+<h5>About the author</h5>
+<p class="small">My name is Andy Fedotov, I live in Moscow, Russia. I have over 6 years experience and internal hacking of Lombardi and IBM BPM platform starting with Lombardi Teamworks 6.x. Participated as Performance Engineer, System Architect and Developer in most of Lombardi / IBM BPM project implementations in russian banks including VTB24, Tinkoff, Sberbank, Raiffeisen, RosSelhozBank, BinBank. Currently I am working for Amrusoft company, its an IBM Business Partner who implements various BPM and ECM projects and provides consulting services. You can contact me using andy.fedotov at gmail.</p>
 
 </body>
 </html>
