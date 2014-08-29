@@ -4,7 +4,7 @@ ILRT (Instrumentation Log Report Tool) is a utility I created to help detect and
 
 Example of such report output can be viewed [here](example-reports/inst001.report.txt?raw=true).
 
->It is very first prototype created to address some common problems, so it was written quick using __Ruby__ language. It is very helpful, works well, but not as fast as we would like. Maybe someday I'll rewrite it on something more performant, Scala for example.
+>It is very first version created to address some common problems, so it was written quick using __Ruby__ language. It is very helpful, works well, but not as fast as we would like. Maybe someday I'll rewrite it on something more performant, Scala for example.
 
 #### Download
 
