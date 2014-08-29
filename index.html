@@ -228,7 +228,7 @@ Note that in cluster topologies for cached 'mutable' objects is reqiured to ensu
 <li><b>ThreadPool worker</b>. This thread pool used by Lombardi engine's Event Manager to execute tasks from EM task queue. These tasks are intended for performing BPD instance navigation (DbNotificationBpdTask), executing UCA and BPD Timers (UcaExecutorTask, TimerNotificationBpdTask), executing automated System Tasks on BPD System Lane (ExecuteSystemLaneActivityTask).</li>
 </ul>
 
-<p>Time periods are recorded in in hierarchical way. Each period can have one or more child periods, as transaction can call multiple other triansactions within itself. So hereinafter <b>L1</b>, <b>L2</b> and so on stands for period depth level. <b>ActivityID</b> is simply a line number in source instrumentation log file, which is intended to identify and find specific activity.</p>
+<p>Time periods are recorded in the hierarchical way. Each period can have one or more child periods, as transaction can call multiple other triansactions within itself. So hereinafter <b>L1</b>, <b>L2</b> and so on stands for period depth level. <b>ActivityID</b> is simply a line number in source instrumentation log file, which is intended to identify and find specific activity.</p>
 
 
 <p>Further in report are presented detailed profiles for each expensive activity. Profiles are presented in two forms.<br>
