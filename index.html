@@ -166,7 +166,7 @@
   <li><b>Unversioned PO</b>. In case of runtime server it is 'mutable' objects, usually some runtime data like Process instance and its context (BPDInstance, BPDInstanceData), Task instance (Task), Project, Branch, Snapshot and so on.</li>
 </ul>
 <p>For improving performance, PersistenceServices usually not directly accessed from process engine. Instead for each PO type exists its own Factory, and within each PO Factory there are FIFO cache for POs. Size of this cache is set by config parameters <b>default-versioned-po-cache-size</b> and <b>default-unversioned-po-cache-size</b>.
-Note that in cluster topologies for cached 'mutable' objects is reqiured to ensure cache coherence. Unfortunately its not so simple, and in IBM BPM this is not implemented. So for cluster topologies you need to disable Unversioned PO cache using config parameter <b>unversioned-po-caching-enable</b>.</p>
+Note that in cluster topologies for cached 'mutable' objects is reqiured to ensure cache coherence. Unfortunately its not so simple. So for cluster topologies it is typically required to disable Unversioned PO cache using config parameter <b>unversioned-po-caching-enable</b> as described in IBM provided configuration. But nowadays IBM LODA consultants say that in latest BPM versions >= 8.x implemented asynchronous distributed notification via JMS events to ensure cache coherence. So it is allowed to leave Unversioned PO cache enabled in cluster.</p>
 
 <p>Overall process engine performance strongly depends upon effective PO cache. To control cache efficiency ILRT report provides relevant section:</p>
 
@@ -356,7 +356,7 @@ Looking at this profile what we can say?
 <p>Analyzing it, we can make the following conclusions:
 <ul>
   <li>Script executions are took 6473 ms in sum, but JavaScript evaluation itself tooks only 1462 ms. Remaining most of time are calls to nested 'Resume Workflow Engine', this could happen if there are JS API tw.system.executeServiceByName function invocations. And also remaining time are system DB queries using findByPrimaryKey.</li>
-  <li>Context switching with SubProcessWorker tooks 4433 ms in sum, and most of time is DB access using findByPrimaryKey. In detailed findByPrimaryKey layout can be seen that these are accesses to Unversioned POs, which are not cached in cluster topologies.</li>
+  <li>Context switching with SubProcessWorker tooks 4433 ms in sum, and most of time is DB access using findByPrimaryKey. In detailed findByPrimaryKey layout can be seen that these are accesses to Unversioned POs. This can be due to disabled cache.</li>
 </ul>
 </p>
 
