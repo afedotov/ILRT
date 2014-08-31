@@ -36,7 +36,7 @@ OptionParser.new do |o|
   o.on('-h', '--help', 'Print help') { puts o; exit! }
   o.parse!
   if $INST_FILENAME.nil?
-    puts "Instrumentation Log Report Tool for IBM BPM"
+    puts 'Instrumentation Log Report Tool for IBM BPM'
     puts o
     exit!
   end
@@ -45,11 +45,11 @@ end
 ###########################################################################################
 
 def createOutputFilename(t)
-  filename = (t[:name]+"."+t[:startLine].to_s).split(/(?<=.)\.(?=[^.])(?!.*\.[^.])/m).map! { |s| s.gsub /[^a-z0-9\-]+/i, '_' }.join(".")
-  return File.dirname($INST_FILENAME) + '/' + $INST_FILENAME + '.' + filename + ".thread.txt"
+  filename = (t[:name]+'.'+t[:startLine].to_s).split(/(?<=.)\.(?=[^.])(?!.*\.[^.])/m).map! { |s| s.gsub /[^a-z0-9\-]+/i, '_' }.join('.')
+  return File.dirname($INST_FILENAME) + '/' + $INST_FILENAME + '.' + filename + '.thread.txt'
 end
 
-def resetProgress()
+def resetProgress
   $prev_pt = nil
 end
 
@@ -57,7 +57,7 @@ def printProgress(current, max)
   current_pt = current * 100 / max
   if $prev_pt.nil? || current_pt - $prev_pt >= 1
     print "\b" * 4 unless $prev_pt.nil?
-    print "= %02d%%" % current_pt
+    print '= %02d%%' % current_pt
   end
   $prev_pt = current_pt
 end
@@ -117,15 +117,15 @@ def processLine(ts, line)
 end
 
 def printHeader(f)
-  f.puts "=" * 155
+  f.puts '=' * 155
   f.puts "\n Report generated with Instrumentation Log Report Tool for IBM BPM"
-  f.puts " (c)2014 andy.fedotov@gmail.com"
+  f.puts ' (c)2014 andy.fedotov@gmail.com'
   f.puts "\n"
-  f.puts " Instrumentation log started at : " + $INST[:firstTimestamp].strftime('%H:%M:%S.%3N')
-  f.puts " Instrumentation log ended at   : " + $INST[:lastTimestamp].strftime('%H:%M:%S.%3N')
-  f.puts " Recording duration (secs)      : " + $INST[:totalDuration].to_s
-  f.puts " Report Generated on            : " + Time.now.to_s + "\n\n"
-  f.puts "=" * 155
+  f.puts ' Instrumentation log started at : ' + $INST[:firstTimestamp].strftime('%H:%M:%S.%3N')
+  f.puts ' Instrumentation log ended at   : ' + $INST[:lastTimestamp].strftime('%H:%M:%S.%3N')
+  f.puts ' Recording duration (secs)      : ' + $INST[:totalDuration].to_s
+  f.puts ' Report Generated on            : ' + Time.now.to_s + "\n\n"
+  f.puts '=' * 155
   f.puts "\n"
 end
 
@@ -135,10 +135,11 @@ def printExpensiveThreadProfile(f, periods, level)
     p = periods.group_by{ |i| i[:name] + (i[:details].empty? ? "" : ", "+i[:details]) }
     return if p.keys.size == 1 && p.keys.first == '#self#'
     p.keys.sort { |a, b| p[b].map{ |v| v[:duration] }.reduce(:+) <=> p[a].map{ |v| v[:duration] }.reduce(:+) }.each { |k|
-      total = p[k].map{ |v| v[:duration] }.reduce(:+)
+      durations = p[k].map{ |v| v[:duration] || 0 }
+      total = durations.reduce(:+)
       count = p[k].size
-      median = median(p[k].map{ |v| v[:duration] }).round
-      max = p[k].map{ |v| v[:duration] }.max
+      median = median(durations).round
+      max = durations.max
       f.puts '|    '*level + '%d ms - %s [cnt=%d,med=%dms,max=%dms]' % [total, k, count, median, max]
       nested = p[k].map{ |v| v[:nested] }.flatten
       printExpensiveThreadProfile(f, nested, level+1)
@@ -151,25 +152,26 @@ def printTopSelfPeriods(f, sp, count)
   f.puts '| %-27s | %16s |' % ['Start/End time','Duration (ms)']
   f.puts '-'*50
   sp.sort { |a,b| b[:duration] <=> a[:duration]}.take(count).each do |p|
-    f.puts "| %-12s - %-12s | %16s |" % [p[:timestamp].strftime('%H:%M:%S.%3N'), (p[:timestamp] + p[:duration].to_f/1000).strftime('%H:%M:%S.%3N'), p[:duration]]
+    f.puts '| %-12s - %-12s | %16s |' % [p[:timestamp].strftime('%H:%M:%S.%3N'), (p[:timestamp] + p[:duration].to_f/1000).strftime('%H:%M:%S.%3N'), p[:duration]]
   end
   f.puts '-'*50
 end
 
 def printPeriodsLevelBreakdown(f, periods)
-  f.puts "| %-8s | %-8s | %-8s | %-8s | %-8s | %-96s |" % ['Total', 'Average', 'Median', 'Max', 'Count', 'Details']
+  f.puts '| %-8s | %-8s | %-8s | %-8s | %-8s | %-96s |' % ['Total', 'Average', 'Median', 'Max', 'Count', 'Details']
   f.puts '-' * 155
   if periods.nil? || periods.size == 0
-    f.puts "| %-8s | %-8s | %-8s | %-8s | %-8s | %-96s |" % ['-', '-', '-' ,'-', '-', '-' ]
+    f.puts '| %-8s | %-8s | %-8s | %-8s | %-8s | %-96s |' % ['-', '-', '-' ,'-', '-', '-' ]
   else
-    periods = periods.group_by{ |i| i[:name] + (i[:details].empty? ? "" : ", "+i[:details]) }
+    periods = periods.group_by{ |i| i[:name] + (i[:details].empty? ? '' : ', '+i[:details]) }
     periods.keys.sort { |a, b| periods[b].map{ |v| v[:duration] }.reduce(:+) <=> periods[a].map{ |v| v[:duration] }.reduce(:+) }.each { |k|
-      total = periods[k].map{ |v| v[:duration] }.reduce(:+)
+      durations = periods[k].map{ |v| v[:duration] || 0 }
+      total = durations.reduce(:+)
       count = periods[k].size
       average = (total.to_f/count).round
-      median = median(periods[k].map{ |v| v[:duration] || 0 }).round
-      max = periods[k].map{ |v| v[:duration] }.max.to_i
-      f.puts "| %-8s | %-8s | %-8s | %-8s | %-8s | %-96s |" % [total, average, median, max ,count, k ]
+      median = median(durations).round
+      max = durations.max.to_i
+      f.puts '| %-8s | %-8s | %-8s | %-8s | %-8s | %-96s |' % [total, average, median, max ,count, k ]
     }
   end
 end
@@ -178,23 +180,23 @@ def printExpensiveThreadsDetails(f, for_name, expensiveThreads)
   f.puts "==> Top #{$TOP_THREADS_COUNT} Expensive Activities: Details for " + for_name + "\n\n"
   expensiveThreads.each { |t|
     f.puts '-' * 155
-    f.puts "| %-12s | %-136s |" % [t[:duration].to_s + " ms" , "ActivityID = " + t[:startLine].to_s + ", Thread Name = " + t[:name]]
+    f.puts '| %-12s | %-136s |' % [t[:duration].to_s + ' ms' , 'ActivityID = ' + t[:startLine].to_s + ', Thread Name = ' + t[:name]]
     f.puts '-' * 155
     t[:periods].keys.sort.each do |lvl|
       next unless $MAX_DEPTH.nil? || lvl < $MAX_DEPTH
       periods = t[:periods][lvl]
-      f.puts "| %-151s |" % ["L#{lvl+1} periods breakdown, total recorded duration = " + (periods || []).map{|p| p[:duration]}.reduce(:+).to_i.to_s+' ms']
+      f.puts '| %-151s |' % ["L#{lvl+1} periods breakdown, total recorded duration = " + (periods || []).map{|p| p[:duration]}.reduce(:+).to_i.to_s+' ms']
       f.puts '-' * 155
       printPeriodsLevelBreakdown(f, periods)
       f.puts '-' * 155
     end
     f.puts "\n"
-    f.puts "Detailed profile for ActivityID = " + t[:startLine].to_s + ", Thread Name = " + t[:name]
+    f.puts 'Detailed profile for ActivityID = ' + t[:startLine].to_s + ', Thread Name = ' + t[:name]
     f.puts "\n"
     printExpensiveThreadProfile(f, t[:periods_tree].first, 0)
     f.puts "\n"
     if $PRINT_TOP_SELF_PERIODS
-      f.puts "Top 10 of self periods for ActivityID = " + t[:startLine].to_s + ", Thread Name = " + t[:name]
+      f.puts 'Top 10 of self periods for ActivityID = ' + t[:startLine].to_s + ', Thread Name = ' + t[:name]
       f.puts "\n"
       printTopSelfPeriods(f, t[:self_periods], 10)
       f.puts "\n"
@@ -211,10 +213,10 @@ def printExpensiveThreads(f, for_name, count)
                 .take(count)
   f.puts "==> Top #{count} Expensive Activities: Overview for " + for_name + "\n\n"
   f.puts '-' * 130
-  f.puts "| %-16s | %-32s | %-12s | %-12s | %-12s | %-12s | %-12s |" % ['Duration (ms)', 'Thread Name', 'ActivityID', 'L1 Periods', 'L1 Time (ms)', 'L2 Periods', 'L2 Time (ms)']
+  f.puts '| %-16s | %-32s | %-12s | %-12s | %-12s | %-12s | %-12s |' % ['Duration (ms)', 'Thread Name', 'ActivityID', 'L1 Periods', 'L1 Time (ms)', 'L2 Periods', 'L2 Time (ms)']
   f.puts '-' * 130
   expensive.each { |t|
-    f.puts "| %-16s | %-32s | %-12s | %-12s | %-12s | %-12s | %-12s |" %
+    f.puts '| %-16s | %-32s | %-12s | %-12s | %-12s | %-12s | %-12s |' %
              [  t[:duration].to_s,
                 t[:name],
                 t[:startLine],
@@ -234,23 +236,23 @@ def printCache(f, count)
   c = c.keys.map { |t| c[t].keys.map { |id| [t,id,c[t][id]['Hits'],c[t][id]['Misses'],c[t][id]['Bypasses']] } }.flatten(1)
   f.puts "==> Cache Statistics: Summary by persistent object type\n\n"
   f.puts '-' * 93
-  f.puts "| %-32s | %-16s | %-16s | %-16s |" % ['Object type', 'Cache Misses', 'Cache Bypasses', 'Cache Hits']
+  f.puts '| %-32s | %-16s | %-16s | %-16s |' % ['Object type', 'Cache Misses', 'Cache Bypasses', 'Cache Hits']
   f.puts '-' * 93
   c.group_by{ |i| i[0] }.map{ |e| [ e[0], e[1].map{ |e| e[2].to_i }.reduce(:+),e[1].map{ |e| e[3].to_i }.reduce(:+),e[1].map{ |e| e[4].to_i }.reduce(:+)] }.sort{ |a,b| b[2] <=> a[2] }.each do |r|
-    f.puts "| %-32s | %-16s | %-16s | %-16s |" % [r[0], r[2], r[3], r[1]]
+    f.puts '| %-32s | %-16s | %-16s | %-16s |' % [r[0], r[2], r[3], r[1]]
   end
   f.puts '-' * 93
-  f.puts "| %-32s | %-16s | %-16s | %-16s |" % ['- Total -', c.map{ |e| e[3].to_i }.reduce(:+), c.map{ |e| e[4].to_i }.reduce(:+), c.map{ |e| e[2].to_i }.reduce(:+)]
+  f.puts '| %-32s | %-16s | %-16s | %-16s |' % ['- Total -', c.map{ |e| e[3].to_i }.reduce(:+), c.map{ |e| e[4].to_i }.reduce(:+), c.map{ |e| e[2].to_i }.reduce(:+)]
   f.puts '-' * 93
-  f.puts "| %-32s | %-54.3f |" % ['Wasting DB, transactions/sec', (c.map{ |e| e[3].to_i }.reduce(:+) + c.map{ |e| e[4].to_i }.reduce(:+)) / $INST[:totalDuration] ]
+  f.puts '| %-32s | %-54.3f |' % ['Wasting DB, transactions/sec', (c.map{ |e| e[3].to_i }.reduce(:+) + c.map{ |e| e[4].to_i }.reduce(:+)) / $INST[:totalDuration] ]
   f.puts '-' * 93
   f.puts "\n"
   f.puts "==> Cache Statistics: Top #{count} cache misses by persistent object instances\n\n"
   f.puts '-' * 125
-  f.puts "| %-64s | %-16s | %-16s | %-16s |" % ['Object ID', 'Cache Misses', 'Cache Bypasses', 'Cache Hits']
+  f.puts '| %-64s | %-16s | %-16s | %-16s |' % ['Object ID', 'Cache Misses', 'Cache Bypasses', 'Cache Hits']
   f.puts '-' * 125
   c.group_by{ |i| i[0]+"."+i[1] }.map{ |e| [ e[0], e[1].map{ |e| e[2].to_i }.reduce(:+),e[1].map{ |e| e[3].to_i }.reduce(:+),e[1].map{ |e| e[4].to_i }.reduce(:+)] }.sort{ |a,b| b[2] <=> a[2] }.select{ |e| e[2] > 0 }.take(count).each do |r|
-    f.puts "| %-64s | %-16s | %-16s | %-16s |" % [r[0], r[2], r[3], r[1]]
+    f.puts '| %-64s | %-16s | %-16s | %-16s |' % [r[0], r[2], r[3], r[1]]
   end
   f.puts '-' * 125
   f.puts "\n"
@@ -258,21 +260,23 @@ end
 
 def printTransactionRow(f, name, periods)
   if periods.nil? || periods.empty?
-    f.puts "| %-48s | %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |" % [name, '-', '-', '-', '-', '-', '-']
+    f.puts '| %-48s | %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |' % [name, '-', '-', '-', '-', '-', '-']
   else
-    total = periods.map{ |e| e[:duration] }.reduce(:+)
-    average = (periods.map{ |e| e[:duration] }.reduce(:+).to_f / periods.size).round
-    median = median(periods.map{ |e| e[:duration] }).round
-    max = periods.map{ |e| e[:duration] }.max.to_i
-    tps = periods.size / $INST[:totalDuration]
-    f.puts "| %-48s | %-12s | %-12s | %-12s | %-12s | %-12s | %-12.3f |" % [name, periods.size, average, median, max, total, tps]
+    durations = periods.map{ |e| e[:duration] || 0 }
+    count = periods.size
+    total = durations.reduce(:+)
+    average = (total.to_f / count).round
+    median = median(durations).round
+    max = durations.max.to_i
+    tps = count / $INST[:totalDuration]
+    f.puts '| %-48s | %-12s | %-12s | %-12s | %-12s | %-12s | %-12.3f |' % [name, count, average, median, max, total, tps]
   end
 end
 
 def printTransactions(f)
   f.puts "==> System transactions summary: Key performance points\n\n"
   f.puts '-' * 142
-  f.puts "| %-48s | %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |" % ['Transaction name', 'Count', 'Average (ms)', 'Median (ms)', 'Max (ms)', 'Total (ms)', 'TPS']
+  f.puts '| %-48s | %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |' % ['Transaction name', 'Count', 'Average (ms)', 'Median (ms)', 'Max (ms)', 'Total (ms)', 'TPS']
   f.puts '-' * 142
   fp = $INST[:threads].map { |t| t[:periods].keys.map { |k| t[:periods][k].map { |p| p } } }.flatten
   printTransactionRow(f, 'Task: Resume Workflow Engine', fp.select { |p| p[:name].start_with?('Resume Workflow Engine') } )
@@ -306,7 +310,7 @@ def dumpExpensive(expensive)
   out = nil
   t  = expensive.sort { |a,b| a[:startLine] <=> b[:startLine] }
   f = File.open($INST_FILENAME)
-  print "Dumping: "
+  print 'Dumping: '
   resetProgress()
   begin
     lnum = 0
@@ -332,16 +336,7 @@ def dumpExpensive(expensive)
   print "\n"
 end
 
-###########################################################################################
-
-if $USE_CACHE && File.exists?($INST_FILENAME+'.idx') && File.mtime($INST_FILENAME) < File.mtime($INST_FILENAME+'.idx')
-  print "Loading cached data from " + File.absolute_path($INST_FILENAME+'.idx') + ' ... '
-  File.open($INST_FILENAME+'.idx') do |f|
-    $INST = Marshal.load(f)
-  end
-  puts 'OK'
-else
-  print "Scaning: "
+def scanInputFile
   resetProgress()
   f = File.open($INST_FILENAME)
   lnum = 1
@@ -355,12 +350,12 @@ else
             $INST[:threads] << $currentThread
           end
           $currentThread = {
-            :name => $1,
-            :startLine => lnum,
-            :periods => {},
-            :periods_tree =>[[]],
-            :self_periods => [],
-            :incomplete => false
+              :name => $1,
+              :startLine => lnum,
+              :periods => {},
+              :periods_tree =>[[]],
+              :self_periods => [],
+              :incomplete => false
           }
         end
         if /^(\d{2}:\d{2}:\d{2}.\d{3})(.*)/.match(line)
@@ -373,7 +368,7 @@ else
         end
       rescue
         puts $!
-        puts "Scaning error, invalid line is: " + line
+        puts 'Scanning error, invalid line is: ' + line
         exit!
       end
       lnum += 1
@@ -390,22 +385,35 @@ else
   $INST[:totalDuration] = $INST[:lastTimestamp] - $INST[:firstTimestamp]
   $INST[:threads].delete_if { |t| t[:incomplete] }
   $INST[:threads].each { |t| t[:duration] = ((parseTimestamp(t[:lastTimestamp]) - parseTimestamp(t[:firstTimestamp])) * 1000).to_i }
+end
+
+###########################################################################################
+
+if $USE_CACHE && File.exists?($INST_FILENAME+'.idx') && File.mtime($INST_FILENAME) < File.mtime($INST_FILENAME+'.idx')
+  print 'Loading cached data from ' + File.absolute_path($INST_FILENAME+'.idx') + ' ... '
+  File.open($INST_FILENAME+'.idx') do |f|
+    $INST = Marshal.load(f)
+  end
+  puts 'OK'
+else
+  print 'Scanning: '
+  scanInputFile()
   File.open($INST_FILENAME+'.idx', 'w') do |file|
     Marshal.dump($INST, file)
   end
   print "\n"
 end
 
-File.open(File.dirname($INST_FILENAME)+'/'+File.basename($INST_FILENAME, '.*')+".report.txt", 'w') do |f|
-  print "Saving report to: " + File.absolute_path(f.path) + ' ... '
+File.open(File.dirname($INST_FILENAME)+'/'+File.basename($INST_FILENAME, '.*')+'.report.txt', 'w') do |f|
+  print 'Saving report to: ' + File.absolute_path(f.path) + ' ... '
   printHeader(f)
   printTransactions(f)
   printCache(f, 25)
-  $wcExpensive = printExpensiveThreads(f, "WebContainer", $TOP_THREADS_COUNT)
-  $tpExpensive = printExpensiveThreads(f, "ThreadPool worker", $TOP_THREADS_COUNT)
+  $wcExpensive = printExpensiveThreads(f, 'WebContainer', $TOP_THREADS_COUNT)
+  $tpExpensive = printExpensiveThreads(f, 'ThreadPool worker', $TOP_THREADS_COUNT)
   if $PRINT_PROFILE
-    printExpensiveThreadsDetails(f, "WebContainer", $wcExpensive)
-    printExpensiveThreadsDetails(f, "ThreadPool worker", $tpExpensive)
+    printExpensiveThreadsDetails(f, 'WebContainer', $wcExpensive)
+    printExpensiveThreadsDetails(f, 'ThreadPool worker', $tpExpensive)
   end
   puts 'OK'
 end
